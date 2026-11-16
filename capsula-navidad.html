@@ -40,7 +40,8 @@ hr{border:0;border-top:1px solid var(--line);margin:26px 0 0}
 input,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
 textarea{min-height:76px;resize:vertical}
 .sum{background:var(--card);border-radius:14px;padding:16px;margin-top:12px}
-.info p{margin:0;font-size:18px;line-height:1.5}.info hr{margin:12px 0}
+.info p{margin:0;white-space:nowrap;font-size:min(18px,calc((100vw - 72px) / 22.5));line-height:1.5}
+.foot{text-align:center;color:var(--mute);white-space:nowrap;font-size:min(14px,calc((100vw - 36px) / 26.8));line-height:1.5;margin:26px 0 0}.info hr{margin:12px 0}
 .row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px}
 .row span:first-child{color:var(--mute)}.row span:last-child{text-align:right}
 .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-size:18px}
@@ -71,7 +72,7 @@ textarea{min-height:76px;resize:vertical}
 </section>
 
 <section>
-  <h2>Color del paspartús <span class="cur" id="matName"></span></h2>
+  <h2>Color del paspartú <span class="cur" id="matName"></span></h2>
   <div class="sw" id="matSw"></div>
 </section>
 
@@ -83,15 +84,15 @@ textarea{min-height:76px;resize:vertical}
 <section>
   <h2>Diseño</h2>
   <div class="lays" id="lays"></div>
-  <p class="hint" style="margin:12px 0 0;text-align:center;white-space:nowrap;line-height:1.35;font-size:min(13px,calc((100vw - 40px) / 26.6))">Las figuras son de referencia, el diseño final va a depender de<br>la dimensión y proporción de la imagen a enmarcar.</p>
+  <p class="hint" style="margin:12px 0 0;text-align:center;white-space:nowrap;line-height:1.35;font-size:min(13px,calc((100vw - 40px) / 25.3))">Las figuras son de referencia, el diseño final va a depender<br>de la dimensión y proporción del material a enmarcar.</p>
   <textarea id="note" style="margin-top:12px" placeholder="Algún comentario sobre el diseño (opcional)"></textarea>
 </section>
 
 <section>
-  <h2>Imagen</h2>
+  <h2>Contenido</h2>
   <div class="opts" id="print"></div>
   <div class="box" id="boxPrint" hidden>Cuando envíes el pedido por WhatsApp, mandame tu foto seleccionando la opción HD. <span id="twoPh" hidden>Como elegiste composición, no olvides mandarme 2 fotos.</span></div>
-  <div class="box" id="boxOwn" hidden>Coordinemos para que me entregues tu imagen<br>Av. Raúl Scalabrini Ortiz 2904</div>
+  <div class="box" id="boxOwn" hidden>Coordinemos para que me lo entregues en<br>Av. Raúl Scalabrini Ortiz 2904</div>
 </section>
 
 <section>
@@ -106,12 +107,14 @@ textarea{min-height:76px;resize:vertical}
   <div class="sum info">
     <p>El pedido se confirma con el pago por transferencia.<br>Tomo pedidos hasta el 5 de diciembre.</p>
     <hr>
-    <p>Fecha de entrega: entre el 14 y 19 de diciembre.</p>
+    <p>Entrega: 14 a 19 de diciembre, a coordinar.</p>
   </div>
   <input id="when" type="text" placeholder="Algún comentario sobre la fecha de entrega (opcional)">
   <a class="btn" id="wa" href="#" target="_blank" rel="noopener" aria-disabled="true">Enviar pedido por WhatsApp</a>
   <p class="miss" id="miss"></p>
 </section>
+
+<p class="foot">Todos los cuadros llevan marco de madera marupá<br>pintado a mano, paspartú importado libre de ácido,<br>vidrio de 2mm, y vienen cerrados y sellados, listos para exhibir.</p>
 
 </div>
 
@@ -124,7 +127,7 @@ var BASE = 55000, PRINT = 5000;
 var FC = {"Rojo":"#ac022d","Verde":"#717859","Azul":"#576d82","Marrón":"#36241d","Negro":"#000000","Madera natural":"#d2b492"};
 var MC = {"Rojo":"#c30031","Verde":"#848c6a","Azul":"#62798e","Marrón":"#4b342b","Negro":"#2d2d2d","Blanco":"#fefefe"};
 var HANG = [["Pie de portaretratos",""],["Cable para colgar en la pared",""]];
-var PR = [["Ya la tengo impresa",""],["Quiero que la imprimas vos","+ $5.000"]];
+var PR = [["Ya lo tengo impreso",""],["Quiero que lo imprimas vos","+ $5.000"]];
 var LAY = [["Central","prot"],["Asimétrico","asim"],["Composición","comp"]];
 var BOXES = { // % del cuadro completo (22 x 27 cm), medidos del diseño original
   prot:[[26.1,26.4,47.3,47.1]],
@@ -178,7 +181,7 @@ function total(){return BASE + (S.print===1 ? PRINT : 0)}
 function missing(){
   var m = [];
   if(S.hang===null) m.push("Soporte");
-  if(S.print===null) m.push("Imagen");
+  if(S.print===null) m.push("Contenido");
   if(!S.lay) m.push("Diseño");
   if(!$("name").value.trim()) m.push("Tu nombre");
   return m;
@@ -187,7 +190,7 @@ function summary(){
   var lines = [
     ["Orientación", S.orient==="h"?"Horizontal":"Vertical"],["Marco", S.frame],["Paspartú", S.mat],
     ["Soporte", S.hang===null?"—":HANG[S.hang][0]],
-    ["Imagen", S.print===null?"—":PR[S.print][0]],
+    ["Contenido", S.print===null?"—":PR[S.print][0]],
     ["Diseño", S.lay?LAY.filter(function(l){return l[1]===S.lay})[0][0]:"—"]
   ];
   return lines;
@@ -197,9 +200,9 @@ function msg(){
   var t = "Hola Anís :)\nQuiero encargarte un marco cápsula Navidad (22 × 27 cm).\n\nNombre: " + n + "\n";
   summary().forEach(function(l){t += "* "+l[0]+": "+l[1]+"\n"});
   if(note) t += "* Comentario: "+note+"\n";
-  t += "\nTotal: "+money(total())+"\nFecha de entrega: entre el 14 y 19 de diciembre";
+  t += "\nTotal: "+money(total())+"\nEntrega: 14 a 19 de diciembre, a coordinar";
   if(w) t += "\nLa necesito para: "+w;
-  if(S.print===0) t += "\nCoordinemos para que te entregue el material a enmarcar";
+  if(S.print===0) t += "\n¿Coordinamos para que te entregue el material a enmarcar?";
   return t;
 }
 function render(){
