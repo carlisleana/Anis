@@ -18,6 +18,10 @@ header{text-align:left;padding:26px 0 0 6px}
 .frame{position:relative;width:100%;height:0;padding-top:122.727%;border-radius:1px;box-shadow:0 8px 20px rgba(0,0,0,.18);transition:background .25s}
 .mat{position:absolute;transition:background .25s}
 .ph{position:absolute;background:#f5f5f5;box-shadow:0 0 0 1px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.18)}
+img.ph{object-fit:cover;display:block}
+.photoRow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:12px 0 0}
+.pill{font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.pill.ghost{border-color:var(--line);color:var(--mute)}
 .cap{text-align:center;color:var(--mute);font-size:15px;margin:12px 0 0}
 section{margin-top:22px}
 h2{font-weight:400;font-size:23px;line-height:1.2;margin:0 0 4px}
@@ -65,6 +69,9 @@ textarea{min-height:76px;resize:vertical}
 
 <div class="preview" id="pvw"><div class="frame" id="pv"></div></div>
 <p class="cap">marco de 22cm x 27cm</p>
+<div class="photoRow"><button type="button" class="pill" id="pickBtn">Ver mi foto en el marco</button><button type="button" class="pill" id="pick2Btn" hidden>Cargar foto 2</button><button type="button" class="pill ghost" id="clearBtn" hidden>Quitar</button></div>
+<input type="file" id="pickFile" accept="image/*" hidden>
+<p class="cap" id="photoHint" style="font-size:13px;margin-top:8px" hidden>Es solo una vista previa: tu foto no se envía desde acá.</p>
 
 <section>
   <h2>Color del marco <span class="cur" id="frameName"></span></h2>
@@ -135,13 +142,23 @@ var BOXES = { // % del cuadro completo (22 x 27 cm), medidos del diseño origina
   comp:[[16.8,16.3,23.9,24.7],[40.2,57.7,40.2,25.1]]
 };
 var S = {orient:"v", frame:"Azul", mat:"Azul", hang:null, print:null, lay:"prot"};
+var PHOTO = null, PHOTO2 = null, PHOTO_ID = 0, lastKey = "";
 var $ = function(id){return document.getElementById(id)};
 var money = function(n){return "$" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".")};
 
 function draw(el, lay){
   var h = S.orient==="h";
-  var boxes = BOXES[lay||"prot"].map(function(b){
+  var W = h?27:22, H = h?22:27;
+  var boxes = BOXES[lay||"prot"].map(function(b,i){
     var l=h?b[1]:b[0], t=h?b[0]:b[1], w=h?b[3]:b[2], ht=h?b[2]:b[3];
+    var src = i===0 ? PHOTO : (i===1 ? PHOTO2 : null);
+    if(src && el.id==="pv"){
+      // la foto siempre es 4:3 (3:4 en vertical), se recorta para llenar y queda centrada donde va la figura
+      var L = Math.max(w*W/100, ht*H/100), pw = h ? L : L*0.75, ph = h ? L*0.75 : L;
+      var cx = l+w/2, cy = t+ht/2;
+      w = pw/W*100; ht = ph/H*100; l = cx-w/2; t = cy-ht/2;
+      return '<img class="ph" alt="Tu foto" src="'+src+'" style="left:'+l+'%;top:'+t+'%;width:'+w+'%;height:'+ht+'%">';
+    }
     return '<div class="ph" style="left:'+l+'%;top:'+t+'%;width:'+w+'%;height:'+ht+'%"></div>';
   }).join("");
   el.className = "frame" + (h ? " h" : "");
@@ -206,7 +223,12 @@ function msg(){
   return t;
 }
 function render(){
-  draw($("pv"), S.lay);
+  var key = [S.orient,S.frame,S.mat,S.lay,PHOTO_ID].join("|");
+  if(key!==lastKey){ draw($("pv"), S.lay); lastKey = key; }
+  var comp = S.lay==="comp", any = !!(PHOTO || (comp && PHOTO2));
+  $("pickBtn").textContent = comp ? (PHOTO ? "Cambiar foto 1" : "Cargar foto 1") : (PHOTO ? "Cambiar foto" : "Ver mi foto en el marco");
+  $("pick2Btn").hidden = !comp; $("pick2Btn").textContent = PHOTO2 ? "Cambiar foto 2" : "Cargar foto 2";
+  $("clearBtn").hidden = !any; $("photoHint").hidden = !any;
   $("frameName").textContent = S.frame; $("matName").textContent = S.mat;
   $("pvw").className = "preview" + (S.orient==="h" ? " h" : "");
   $("orient").innerHTML = [["v","Vertical"],["h","Horizontal"]].map(function(o){
@@ -236,6 +258,34 @@ document.addEventListener("click", function(e){
 $("name").addEventListener("input", render);
 $("note").addEventListener("input", render);
 $("when").addEventListener("input", render);
+function loadPhoto(file, which){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var url = fr.result;
+      try{
+        var sc = Math.min(1, 900/Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth*sc); c.height = Math.round(img.naturalHeight*sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        url = c.toDataURL("image/jpeg", .85);
+      }catch(e){}
+      if(which===2) PHOTO2 = url; else PHOTO = url;
+      PHOTO_ID++;
+      $("photoHint").textContent = "Es solo una vista previa: tu foto no se envía desde acá.";
+      render();
+    };
+    img.onerror = function(){ $("photoHint").textContent = "No pude abrir esa foto, probá con otra."; $("photoHint").hidden = false; };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+var pickTarget = 1;
+$("pickBtn").addEventListener("click", function(){ pickTarget = 1; $("pickFile").click(); });
+$("pick2Btn").addEventListener("click", function(){ pickTarget = 2; $("pickFile").click(); });
+$("pickFile").addEventListener("change", function(){ var f = this.files && this.files[0]; if(f) loadPhoto(f, pickTarget); this.value = ""; });
+$("clearBtn").addEventListener("click", function(){ PHOTO = null; PHOTO2 = null; PHOTO_ID++; render(); });
 $("wa").addEventListener("click", function(e){ if(this.getAttribute("aria-disabled")==="true") e.preventDefault(); });
 render();
 </script>
